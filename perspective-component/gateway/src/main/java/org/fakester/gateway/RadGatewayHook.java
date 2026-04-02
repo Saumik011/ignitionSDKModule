@@ -3,6 +3,8 @@ package org.fakester.gateway;
 import java.util.Optional;
 
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
+import com.inductiveautomation.ignition.common.script.ScriptManager;
+import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
@@ -13,9 +15,13 @@ import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
 import org.fakester.common.RadComponents;
 import org.fakester.common.component.display.Image;
 import org.fakester.common.component.display.Messenger;
+import org.fakester.common.component.display.PopupProvider;
 import org.fakester.common.component.display.TagCounter;
 import org.fakester.gateway.delegate.MessageComponentModelDelegate;
+import org.fakester.gateway.delegate.PopupModelDelegate;
 import org.fakester.gateway.endpoint.DataEndpoints;
+import org.fakester.gateway.endpoint.PopupEndpoints;
+import org.fakester.gateway.script.PopupScriptFunctions;
 
 public class RadGatewayHook extends AbstractGatewayModuleHook {
 
@@ -46,6 +52,7 @@ public class RadGatewayHook extends AbstractGatewayModuleHook {
             this.componentRegistry.registerComponent(Image.DESCRIPTOR);
             this.componentRegistry.registerComponent(TagCounter.DESCRIPTOR);
             this.componentRegistry.registerComponent(Messenger.DESCRIPTOR);
+            this.componentRegistry.registerComponent(PopupProvider.DESCRIPTOR);
         } else {
             log.error("Reference to component registry not found, Rad Components will fail to function!");
         }
@@ -53,10 +60,22 @@ public class RadGatewayHook extends AbstractGatewayModuleHook {
         if (this.modelDelegateRegistry != null) {
             log.info("Registering model delegates.");
             this.modelDelegateRegistry.register(Messenger.COMPONENT_ID, MessageComponentModelDelegate::new);
+            this.modelDelegateRegistry.register(PopupProvider.COMPONENT_ID, PopupModelDelegate::new);
         } else {
             log.error("ModelDelegateRegistry was not found!");
         }
 
+    }
+
+    @Override
+    public void initializeScriptManager(ScriptManager manager) {
+        super.initializeScriptManager(manager);
+
+        manager.addScriptModule(
+            "system.popup",
+            new PopupScriptFunctions(this.perspectiveContext),
+            new PropertiesFileDocProvider()
+        );
     }
 
     @Override
@@ -66,11 +85,13 @@ public class RadGatewayHook extends AbstractGatewayModuleHook {
             this.componentRegistry.removeComponent(Image.COMPONENT_ID);
             this.componentRegistry.removeComponent(TagCounter.COMPONENT_ID);
             this.componentRegistry.removeComponent(Messenger.COMPONENT_ID);
+            this.componentRegistry.removeComponent(PopupProvider.COMPONENT_ID);
         } else {
             log.warn("Component registry was null, could not unregister Rad Components.");
         }
         if (this.modelDelegateRegistry != null ) {
             this.modelDelegateRegistry.remove(Messenger.COMPONENT_ID);
+            this.modelDelegateRegistry.remove(PopupProvider.COMPONENT_ID);
         }
 
     }
@@ -84,6 +105,7 @@ public class RadGatewayHook extends AbstractGatewayModuleHook {
     public void mountRouteHandlers(RouteGroup routeGroup) {
         // where you may choose to implement web server endpoints accessible via `host:port/system/data/
         DataEndpoints.mountRoutes(routeGroup);
+        PopupEndpoints.mountRoutes(routeGroup);
     }
 
     // Lets us use the route http://<gateway>/res/radcomponents/*

@@ -2,6 +2,8 @@ package org.fakester.designer;
 
 import com.inductiveautomation.ignition.common.BundleUtil;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
+import com.inductiveautomation.ignition.common.script.ScriptManager;
+import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.designer.model.AbstractDesignerModuleHook;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
@@ -12,6 +14,7 @@ import org.fakester.common.component.display.Image;
 import org.fakester.common.component.display.Messenger;
 import org.fakester.common.component.display.TagCounter;
 import org.fakester.designer.component.TagCountDesignDelegate;
+import org.fakester.designer.script.DesignerPopupScriptModule;
 
 
 /**
@@ -56,6 +59,16 @@ public class RadDesignerHook extends AbstractDesignerModuleHook {
         delegateRegistry.register(TagCounter.COMPONENT_ID, new TagCountDesignDelegate());
     }
 
+    @Override
+    public void initializeScriptManager(ScriptManager manager) {
+        super.initializeScriptManager(manager);
+
+        manager.addScriptModule(
+            "system.popup",
+            new DesignerPopupScriptModule(),
+            new PropertiesFileDocProvider()
+        );
+    }
 
     @Override
     public void shutdown() {
@@ -70,3 +83,4 @@ public class RadDesignerHook extends AbstractDesignerModuleHook {
         delegateRegistry.remove(TagCounter.COMPONENT_ID);
     }
 }
+
